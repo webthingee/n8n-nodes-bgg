@@ -11,14 +11,14 @@
     "automation"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/seanlange/n8n-nodes-bgg",
+  "homepage": "https://github.com/webthingee/n8n-nodes-bgg",
   "author": {
     "name": "Sean Lange",
     "email": "sean.lange@example.com"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seanlange/n8n-nodes-bgg.git"
+    "url": "git+https://github.com/webthingee/n8n-nodes-bgg.git"
   },
   "main": "index.js",
   "scripts": {
