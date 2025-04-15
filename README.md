@@ -11,6 +11,7 @@ For detailed information about the BGG XML API2, see [BGG API Documentation](doc
 - Search for board games by name
 - Get detailed information about a specific game using its ID
 - Get rules forum threads for a specific game
+- Get detailed information about a specific forum thread
 - No authentication required - uses BGG's public API
 
 ## Installation
@@ -75,6 +76,25 @@ After installing the node, restart your n8n container for the node to appear in 
      - Post date
      - Last post date
 
+### Get Thread
+1. Add a "BoardGameGeek" node to your workflow
+2. Select "Get Thread" as the operation
+3. Enter the thread ID (you can get this from the Get Rules Forum Threads operation)
+4. The node will return detailed thread information including:
+   - Thread ID
+   - Subject
+   - Number of articles
+   - Link to the thread
+   - List of articles with:
+     - Article ID
+     - Username
+     - Link to the article
+     - Post date
+     - Edit date (if edited)
+     - Number of edits
+     - Subject
+     - Body content
+
 ## Example Response
 
 ### Search Games
@@ -124,6 +144,28 @@ After installing the node, restart your n8n container for the node to appear in 
       "numArticles": "5",
       "postDate": "2024-04-12 08:58:45",
       "lastPostDate": "2024-04-15 16:26:35"
+    }
+  ]
+}
+```
+
+### Get Thread
+```json
+{
+  "id": "2393912",
+  "subject": "Building villages",
+  "numArticles": 4,
+  "link": "https://boardgamegeek.com/thread/2393912/building-villages",
+  "articles": [
+    {
+      "id": "2393912",
+      "username": "user123",
+      "link": "https://boardgamegeek.com/article/2393912",
+      "postDate": "2024-04-10 14:30:00",
+      "editDate": "2024-04-10 15:45:00",
+      "numEdits": 1,
+      "subject": "Building villages",
+      "body": "How do I build villages in this game?"
     }
   ]
 }
