@@ -415,6 +415,29 @@ export class Bgg implements INodeType {
 						}))
 					};
 
+					// Sort threads based on user preferences
+					const sortBy = this.getNodeParameter('sortBy', i) as string;
+					const sortOrder = this.getNodeParameter('sortOrder', i) as string;
+					
+					cleanResult.threads.sort((a: ForumThread, b: ForumThread) => {
+						let comparison = 0;
+						switch (sortBy) {
+							case 'mostRecent':
+								comparison = new Date(b.lastPostDate).getTime() - new Date(a.lastPostDate).getTime();
+								break;
+							case 'newest':
+								comparison = new Date(b.postDate).getTime() - new Date(a.postDate).getTime();
+								break;
+							case 'mostActive':
+								comparison = b.numArticles - a.numArticles;
+								break;
+							case 'alphabetical':
+								comparison = a.subject.localeCompare(b.subject);
+								break;
+						}
+						return sortOrder === 'desc' ? comparison : -comparison;
+					});
+
 					returnData.push({
 						json: cleanResult
 					});
