@@ -14,25 +14,26 @@ interface BggGame {
 		id: string;
 		type: string;
 	};
-	name?: Array<{
+	name: Array<{
 		$: {
+			type: string;
 			value: string;
 		};
 	}>;
-	description?: string[];
+	description: string[];
 	image?: string[];
 	thumbnail?: string[];
-	minplayers?: Array<{
+	minplayers: Array<{
 		$: {
 			value: string;
 		};
 	}>;
-	maxplayers?: Array<{
+	maxplayers: Array<{
 		$: {
 			value: string;
 		};
 	}>;
-	playingtime?: Array<{
+	playingtime: Array<{
 		$: {
 			value: string;
 		};
@@ -47,7 +48,7 @@ interface BggGame {
 			value: string;
 		};
 	}>;
-	yearpublished?: Array<{
+	yearpublished: Array<{
 		$: {
 			value: string;
 		};
@@ -61,8 +62,9 @@ interface BggSearchResult {
 				id: string;
 				type: string;
 			};
-			name?: Array<{
+			name: Array<{
 				$: {
+					type: string;
 					value: string;
 				};
 			}>;
@@ -116,16 +118,7 @@ interface BggForumThreads {
 			termsofuse: string;
 		};
 		threads: {
-			thread: Array<{
-				$: {
-					id: string;
-					subject: string;
-					author: string;
-					numarticles: string;
-					postdate: string;
-					lastpostdate: string;
-				};
-			}>;
+			thread: BggThread[];
 		};
 	};
 }
@@ -173,20 +166,26 @@ export class Bgg implements INodeType {
 					{
 						name: 'Get Game',
 						value: 'getGame',
-						description: 'Get information about a specific game',
-						action: 'Get information about a specific game',
+						description: 'Get detailed information about a specific game',
+						action: 'Get detailed information about a specific game',
 					},
 					{
 						name: 'Search Games',
 						value: 'searchGames',
-						description: 'Search for games',
-						action: 'Search for games',
+						description: 'Search for games by name',
+						action: 'Search for games by name',
 					},
 					{
 						name: 'Get Rules Forum Threads',
 						value: 'getRulesForumThreads',
-						description: 'Get threads from the rules forum of a game',
-						action: 'Get threads from the rules forum of a game',
+						description: 'Get threads from the rules forum of a specific game',
+						action: 'Get threads from the rules forum of a specific game',
+					},
+					{
+						name: 'Get Thread',
+						value: 'getThread',
+						description: 'Get detailed information about a specific forum thread',
+						action: 'Get detailed information about a specific forum thread',
 					},
 				],
 				default: 'getGame',
@@ -303,6 +302,19 @@ export class Bgg implements INodeType {
 				],
 				description: 'The order to sort the results',
 			},
+			{
+				displayName: 'Thread ID',
+				name: 'threadId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['getThread'],
+					},
+				},
+				description: 'The ID of the thread to retrieve',
+			},
 		],
 	};
 
@@ -331,16 +343,16 @@ export class Bgg implements INodeType {
 						json: {
 							id: game.$.id,
 							type: game.$.type,
-							name: game.name?.[0]?.$.value || '',
-							description: game.description?.[0] || '',
+							name: game.name[0].$.value || '',
+							description: game.description[0] || '',
 							image: game.image?.[0] || '',
 							thumbnail: game.thumbnail?.[0] || '',
-							minPlayers: game.minplayers?.[0]?.$.value || '',
-							maxPlayers: game.maxplayers?.[0]?.$.value || '',
-							playingTime: game.playingtime?.[0]?.$.value || '',
+							minPlayers: game.minplayers[0].$.value || '',
+							maxPlayers: game.maxplayers[0].$.value || '',
+							playingTime: game.playingtime[0].$.value || '',
 							minPlayTime: game.minplaytime?.[0]?.$.value || '',
 							maxPlayTime: game.maxplaytime?.[0]?.$.value || '',
-							yearPublished: game.yearpublished?.[0]?.$.value || '',
+							yearPublished: game.yearpublished[0].$.value || '',
 						},
 					});
 				} else if (operation === 'searchGames') {
@@ -364,7 +376,7 @@ export class Bgg implements INodeType {
 					const games = result.items.item.map((item) => ({
 						id: item.$.id,
 						type: item.$.type,
-						name: item.name?.[0]?.$.value || '',
+						name: item.name[0].$.value || '',
 						yearPublished: item.yearpublished?.[0]?.$.value || '',
 					}));
 
@@ -440,6 +452,46 @@ export class Bgg implements INodeType {
 
 					returnData.push({
 						json: cleanResult
+					});
+				} else if (operation === 'getThread') {
+					const threadId = this.getNodeParameter('threadId', i) as string;
+					if (!threadId) {
+						throw new NodeOperationError(this.getNode(), 'Thread ID is required');
+					}
+
+					const response = await axios.get(`https://boardgamegeek.com/xmlapi2/thread?id=${threadId}`);
+					console.log('Raw Thread XML Response:', response.data);
+					
+					const result = await parseStringPromise(response.data, {
+						mergeAttrs: true,
+						explicitArray: false
+					});
+					console.log('Parsed Thread Response:', JSON.stringify(result, null, 2));
+					
+					if (!result.thread) {
+						throw new NodeOperationError(this.getNode(), 'Thread not found');
+					}
+
+					const articles = result.thread.articles?.article || [];
+					const articlesArray = Array.isArray(articles) ? articles : [articles];
+					
+					returnData.push({
+						json: {
+							id: result.thread.id,
+							subject: result.thread.subject,
+							numArticles: parseInt(result.thread.numarticles, 10),
+							link: result.thread.link,
+							articles: articlesArray.map((article: any) => ({
+								id: article.id,
+								username: article.username,
+								link: article.link,
+								postDate: article.postdate,
+								editDate: article.editdate,
+								numEdits: parseInt(article.numedits || '0', 10),
+								subject: article.subject || '',
+								body: article.body || ''
+							}))
+						},
 					});
 				}
 			} catch (error: unknown) {
