@@ -4,6 +4,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeOperationError,
+	IDataObject,
 } from 'n8n-workflow';
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
@@ -74,15 +75,89 @@ interface BggSearchResult {
 	};
 }
 
+interface BggForum {
+	$: {
+		id: string;
+		title: string;
+		noposting: string;
+		description: string;
+		numthreads: string;
+		numposts: string;
+		lastpostdate: string;
+	};
+}
+
+interface BggForumList {
+	forums: {
+		forum: BggForum[];
+	};
+}
+
+interface BggThread {
+	$: {
+		id: string;
+		subject: string;
+		author: string;
+		numarticles: string;
+		postdate: string;
+		lastpostdate: string;
+	};
+}
+
+interface BggForumThreads {
+	forum: {
+		$: {
+			id: string;
+			title: string;
+			numthreads: string;
+			numposts: string;
+			lastpostdate: string;
+			noposting: string;
+			termsofuse: string;
+		};
+		threads: {
+			thread: Array<{
+				$: {
+					id: string;
+					subject: string;
+					author: string;
+					numarticles: string;
+					postdate: string;
+					lastpostdate: string;
+				};
+			}>;
+		};
+	};
+}
+
+interface ForumThread {
+	id: string;
+	subject: string;
+	author: string;
+	numArticles: number;
+	postDate: string;
+	lastPostDate: string;
+}
+
+interface ForumResponse extends IDataObject {
+	forumId: string;
+	forumTitle: string;
+	threadCount: number;
+	postCount: number;
+	lastPostDate: string;
+	threads: ForumThread[];
+	rawResponse?: string;
+}
+
 export class Bgg implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'BoardGameGeek',
 		name: 'bgg',
 		icon: 'file:icon.svg',
 		group: ['input'],
-		version: 1,
+		version: 1.3,
 		subtitle: '={{$parameter["operation"]}}',
-		description: 'Interact with BoardGameGeek API',
+		description: 'Interact with BoardGameGeek API v1.3 (Built: ' + new Date().toISOString() + ')',
 		defaults: {
 			name: 'BoardGameGeek',
 		},
@@ -107,6 +182,12 @@ export class Bgg implements INodeType {
 						description: 'Search for games',
 						action: 'Search for games',
 					},
+					{
+						name: 'Get Rules Forum Threads',
+						value: 'getRulesForumThreads',
+						description: 'Get threads from the rules forum of a game',
+						action: 'Get threads from the rules forum of a game',
+					},
 				],
 				default: 'getGame',
 			},
@@ -118,7 +199,7 @@ export class Bgg implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['getGame'],
+						operation: ['getGame', 'getRulesForumThreads'],
 					},
 				},
 				description: 'The ID of the game to retrieve',
@@ -135,6 +216,92 @@ export class Bgg implements INodeType {
 					},
 				},
 				description: 'The search term to look for games',
+			},
+			{
+				displayName: 'Page',
+				name: 'page',
+				type: 'number',
+				required: false,
+				default: 1,
+				displayOptions: {
+					show: {
+						operation: ['getRulesForumThreads'],
+					},
+				},
+				description: 'Page number of threads to retrieve',
+			},
+			{
+				displayName: 'Count',
+				name: 'count',
+				type: 'number',
+				required: false,
+				default: 50,
+				displayOptions: {
+					show: {
+						operation: ['getRulesForumThreads'],
+					},
+				},
+				description: 'Number of threads per page',
+			},
+			{
+				displayName: 'Sort By',
+				name: 'sortBy',
+				type: 'options',
+				required: false,
+				default: 'mostRecent',
+				displayOptions: {
+					show: {
+						operation: ['getRulesForumThreads'],
+					},
+				},
+				options: [
+					{
+						name: 'Most Recent',
+						value: 'mostRecent',
+						description: 'Sort by most recent activity',
+					},
+					{
+						name: 'Newest Threads',
+						value: 'newest',
+						description: 'Sort by thread creation date',
+					},
+					{
+						name: 'Most Active',
+						value: 'mostActive',
+						description: 'Sort by number of articles',
+					},
+					{
+						name: 'Alphabetical',
+						value: 'alphabetical',
+						description: 'Sort by thread subject',
+					},
+				],
+				description: 'How to sort the forum threads',
+			},
+			{
+				displayName: 'Sort Order',
+				name: 'sortOrder',
+				type: 'options',
+				required: false,
+				default: 'desc',
+				displayOptions: {
+					show: {
+						operation: ['getRulesForumThreads'],
+					},
+				},
+				options: [
+					{
+						name: 'Descending',
+						value: 'desc',
+						description: 'Sort in descending order (newest/highest first)',
+					},
+					{
+						name: 'Ascending',
+						value: 'asc',
+						description: 'Sort in ascending order (oldest/lowest first)',
+					},
+				],
+				description: 'The order to sort the results',
 			},
 		],
 	};
@@ -205,6 +372,51 @@ export class Bgg implements INodeType {
 						json: {
 							items: games,
 						},
+					});
+				} else if (operation === 'getRulesForumThreads') {
+					const gameId = this.getNodeParameter('gameId', i) as string;
+					const page = this.getNodeParameter('page', i) as number;
+					const count = this.getNodeParameter('count', i) as number;
+
+					// First get the rules forum ID
+					const forumListResponse = await axios.get(`https://boardgamegeek.com/xmlapi2/forumlist?type=thing&id=${gameId}`);
+					const forumListResult = await parseStringPromise(forumListResponse.data) as BggForumList;
+					
+					const rulesForum = forumListResult.forums.forum.find(f => f.$.title.toLowerCase().includes('rules'));
+					if (!rulesForum) {
+						throw new Error('Rules forum not found');
+					}
+
+					// Then get the forum threads
+					const forumResponse = await axios.get(`https://boardgamegeek.com/xmlapi2/forum?id=${rulesForum.$.id}&page=${page}&count=${count}`);
+					console.log('Raw Forum XML Response:', forumResponse.data);
+					
+					// Parse with mergeAttrs to avoid the $ property
+					const forumResult = await parseStringPromise(forumResponse.data, {
+						mergeAttrs: true,
+						explicitArray: false
+					});
+					console.log('Raw Parsed Result:', JSON.stringify(forumResult, null, 2));
+
+					// Clean up the structure
+					const cleanResult = {
+						forumId: forumResult.forum.id,
+						forumTitle: forumResult.forum.title,
+						threadCount: parseInt(forumResult.forum.numthreads, 10),
+						postCount: parseInt(forumResult.forum.numposts, 10),
+						lastPostDate: new Date(forumResult.forum.lastpostdate).toISOString(),
+						threads: forumResult.forum.threads.thread.map((thread: any) => ({
+							id: thread.id,
+							subject: thread.subject,
+							author: thread.author,
+							numArticles: parseInt(thread.numarticles, 10),
+							postDate: new Date(thread.postdate).toISOString(),
+							lastPostDate: new Date(thread.lastpostdate).toISOString()
+						}))
+					};
+
+					returnData.push({
+						json: cleanResult
 					});
 				}
 			} catch (error: unknown) {

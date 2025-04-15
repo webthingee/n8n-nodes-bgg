@@ -3,6 +3,14 @@ node_modules/
 
 # Build outputs
 dist/
+build/
+*.tsbuildinfo
+
+# Documentation
+docs/
+*.mdx
+*.md
+!README.md
 
 # Logs
 logs
@@ -27,4 +35,8 @@ yarn-error.log*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# Docker
+.docker/
+docker-compose.override.yml 
