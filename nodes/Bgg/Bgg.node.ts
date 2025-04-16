@@ -207,7 +207,7 @@ export class Bgg implements INodeType {
 		group: ['input'],
 		version: [1, 3, 0],
 		subtitle: '={{$parameter["operation"]}}',
-		description: 'Interact with BoardGameGeek API v1.3 (Built: ' + new Date().toISOString() + ')',
+		description: 'Interact with BoardGameGeek API (Built: ' + new Date().toISOString() + ')',
 		defaults: {
 			name: 'BoardGameGeek',
 		},
