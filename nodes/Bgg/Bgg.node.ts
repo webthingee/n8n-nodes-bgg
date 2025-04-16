@@ -8,33 +8,7 @@ import {
 } from 'n8n-workflow';
 import { parseStringPromise } from 'xml2js';
 
-interface XmlLink {
-	$: {
-		type: string;
-		id: string;
-		value: string;
-	};
-}
-
-interface XmlRating {
-	$: {
-		value: string;
-	};
-}
-
-interface XmlRatings {
-	average: XmlRating[];
-	usersrated: XmlRating[];
-	bayesaverage: XmlRating[];
-	stddev: XmlRating[];
-	median: XmlRating[];
-}
-
-interface XmlStatistics {
-	ratings: XmlRatings[];
-}
-
-interface XmlGame {
+interface XmlGameItem {
 	$: {
 		id: string;
 		type: string;
@@ -42,6 +16,11 @@ interface XmlGame {
 	name: Array<{
 		$: {
 			type: string;
+			value: string;
+		};
+	}>;
+	yearpublished: Array<{
+		$: {
 			value: string;
 		};
 	}>;
@@ -78,13 +57,35 @@ interface XmlGame {
 			value: string;
 		};
 	}>;
-	yearpublished: Array<{
-		$: {
-			value: string;
-		};
+	statistics?: Array<{
+		ratings: Array<{
+			average: Array<{
+				$: {
+					value: string;
+				};
+			}>;
+			usersrated: Array<{
+				$: {
+					value: string;
+				};
+			}>;
+			bayesaverage: Array<{
+				$: {
+					value: string;
+				};
+			}>;
+			stddev: Array<{
+				$: {
+					value: string;
+				};
+			}>;
+			median: Array<{
+				$: {
+					value: string;
+				};
+			}>;
+		}>;
 	}>;
-	link?: XmlLink[];
-	statistics?: XmlStatistics[];
 }
 
 interface BggGame extends IDataObject {
@@ -100,11 +101,6 @@ interface BggGame extends IDataObject {
 	minplaytime?: string;
 	maxplaytime?: string;
 	minage?: string;
-	link?: Array<{
-		type: string;
-		id: string;
-		value: string;
-	}>;
 	statistics?: {
 		ratings: {
 			average: string;
@@ -114,7 +110,6 @@ interface BggGame extends IDataObject {
 			median: string;
 		};
 	};
-	[key: string]: any;
 }
 
 interface BggSearchResult {
@@ -154,34 +149,6 @@ interface BggForum {
 interface BggForumList {
 	forums: {
 		forum: BggForum[];
-	};
-}
-
-interface BggThread {
-	$: {
-		id: string;
-		subject: string;
-		author: string;
-		numarticles: string;
-		postdate: string;
-		lastpostdate: string;
-	};
-}
-
-interface BggForumThreads {
-	forum: {
-		$: {
-			id: string;
-			title: string;
-			numthreads: string;
-			numposts: string;
-			lastpostdate: string;
-			noposting: string;
-			termsofuse: string;
-		};
-		threads: {
-			thread: BggThread[];
-		};
 	};
 }
 
@@ -371,7 +338,6 @@ export class Bgg implements INodeType {
 				displayName: 'Page',
 				name: 'page',
 				type: 'number',
-				required: false,
 				default: 1,
 				displayOptions: {
 					show: {
@@ -384,7 +350,6 @@ export class Bgg implements INodeType {
 				displayName: 'Count',
 				name: 'count',
 				type: 'number',
-				required: false,
 				default: 50,
 				displayOptions: {
 					show: {
@@ -397,33 +362,30 @@ export class Bgg implements INodeType {
 				displayName: 'Sort By',
 				name: 'sortBy',
 				type: 'options',
-				required: false,
 				default: 'mostRecent',
 				displayOptions: {
 					show: {
-						operation: ['getForumThreads'],
+						operation: [
+							'getForumThreads',
+						],
 					},
 				},
 				options: [
 					{
-						name: 'Most Recent',
+						name: 'Most Recent Activity',
 						value: 'mostRecent',
-						description: 'Sort by most recent activity',
 					},
 					{
 						name: 'Newest Threads',
 						value: 'newest',
-						description: 'Sort by thread creation date',
 					},
 					{
 						name: 'Most Active',
 						value: 'mostActive',
-						description: 'Sort by number of articles',
 					},
 					{
 						name: 'Alphabetical',
 						value: 'alphabetical',
-						description: 'Sort by thread subject',
 					},
 				],
 				description: 'How to sort the forum threads',
@@ -432,23 +394,22 @@ export class Bgg implements INodeType {
 				displayName: 'Sort Order',
 				name: 'sortOrder',
 				type: 'options',
-				required: false,
 				default: 'desc',
 				displayOptions: {
 					show: {
-						operation: ['getForumThreads'],
+						operation: [
+							'getForumThreads',
+						],
 					},
 				},
 				options: [
 					{
-						name: 'Descending',
-						value: 'desc',
-						description: 'Sort in descending order (newest/highest first)',
-					},
-					{
 						name: 'Ascending',
 						value: 'asc',
-						description: 'Sort in ascending order (oldest/lowest first)',
+					},
+					{
+						name: 'Descending',
+						value: 'desc',
 					},
 				],
 				description: 'The order to sort the results',
@@ -489,8 +450,11 @@ export class Bgg implements INodeType {
 
 				if (operation === 'getGame') {
 					const gameId = this.getNodeParameter('gameId', i) as string;
-					
-					responseData = await this.helpers.request({
+					if (!gameId) {
+						throw new NodeOperationError(this.getNode(), 'Game ID is required');
+					}
+
+					const response = await this.helpers.request({
 						method: 'GET',
 						url: `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1`,
 						headers: {
@@ -501,13 +465,13 @@ export class Bgg implements INodeType {
 					if (rawResponse) {
 						returnData.push({
 							json: {
-								rawResponse: responseData
+								rawResponse: response
 							}
 						});
 						continue;
 					}
 
-					const result = await parseStringPromise(responseData) as { items: { item: XmlGame[] } };
+					const result = await parseStringPromise(response) as { items: { item: XmlGameItem[] } };
 					const items = result.items.item;
 
 					if (!items || items.length === 0) {
@@ -528,11 +492,6 @@ export class Bgg implements INodeType {
 						minplaytime: game.minplaytime?.[0].$.value,
 						maxplaytime: game.maxplaytime?.[0].$.value,
 						minage: game.minage?.[0].$.value,
-						link: game.link?.map(link => ({
-							type: link.$.type,
-							id: link.$.id,
-							value: link.$.value,
-						})),
 					};
 
 					if (game.statistics?.[0]?.ratings?.[0]) {
@@ -549,12 +508,15 @@ export class Bgg implements INodeType {
 					}
 
 					returnData.push({
-						json: gameData,
+						json: gameData
 					});
 				} else if (operation === 'searchGames') {
 					const searchQuery = this.getNodeParameter('searchQuery', i) as string;
-					
-					responseData = await this.helpers.request({
+					if (!searchQuery) {
+						throw new NodeOperationError(this.getNode(), 'Search query is required');
+					}
+
+					const response = await this.helpers.request({
 						method: 'GET',
 						url: `https://boardgamegeek.com/xmlapi2/search?query=${encodeURIComponent(searchQuery)}&type=boardgame`,
 						headers: {
@@ -565,33 +527,26 @@ export class Bgg implements INodeType {
 					if (rawResponse) {
 						returnData.push({
 							json: {
-								rawResponse: responseData
+								rawResponse: response
 							}
 						});
 						continue;
 					}
 
-					const result = await parseStringPromise(responseData) as BggSearchResult;
+					const result = await parseStringPromise(response);
 
-					if (!result.items || !result.items.item) {
-						returnData.push({
-							json: {
-								items: [],
-							},
-						});
-						continue;
+					if (!result.items || !result.items.item || result.items.item.length === 0) {
+						throw new NodeOperationError(this.getNode(), 'No games found matching the search query');
 					}
 
-					const games = result.items.item.map((item) => ({
+					const searchResults: BggSearchResult[] = result.items.item.map((item: { $: { id: string }; name: Array<{ $: { value: string } }> }) => ({
 						id: item.$.id,
-						type: item.$.type,
-						name: item.name[0].$.value || '',
-						yearPublished: item.yearpublished?.[0]?.$.value || '',
+						name: item.name[0].$.value,
 					}));
 
 					returnData.push({
 						json: {
-							items: games,
+							items: searchResults,
 						},
 					});
 				} else if (operation === 'getForumThreads') {
@@ -794,14 +749,14 @@ export class Bgg implements INodeType {
 				}
 			} catch (error: unknown) {
 				if (this.continueOnFail()) {
-					returnData.push({ 
-						json: { 
-							error: error instanceof Error ? error.message : 'An unknown error occurred' 
-						} 
+					returnData.push({
+						json: {
+							error: error instanceof Error ? error.message : 'An unknown error occurred'
+						}
 					});
 					continue;
 				}
-				throw error;
+				throw new NodeOperationError(this.getNode(), error instanceof Error ? error.message : 'An unknown error occurred');
 			}
 		}
 

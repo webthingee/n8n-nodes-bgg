@@ -1,8 +1,8 @@
 module.exports = {
 	root: true,
-	parser: '@typescript-eslint/parser',
 	parserOptions: {
-		project: 'tsconfig.json',
+		project: ['./tsconfig.json'],
+		extraFileExtensions: ['.json'],
 		tsconfigRootDir: __dirname,
 		sourceType: 'module',
 	},
@@ -21,5 +21,6 @@ module.exports = {
 		'@typescript-eslint/no-explicit-any': 'off',
 		'@typescript-eslint/no-non-null-assertion': 'off',
 		'@typescript-eslint/no-unused-vars': 'off',
+		'n8n-nodes-base/node-execute-block-wrong-error-thrown': 'error',
 	},
 }; 
