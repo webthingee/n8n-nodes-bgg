@@ -7,6 +7,7 @@ A custom n8n node for interacting with the BoardGameGeek (BGG) XML API2.
 - Get detailed game information
 - Search for games
 - Get forum threads
+- Get articles in a thread
 - Get current hot games
 
 ## Installation
@@ -79,6 +80,31 @@ Example response:
       "numArticles": 10,
       "postDate": "2024-03-19T10:00:00Z",
       "lastPostDate": "2024-03-20T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Get Articles in Thread
+Retrieves all articles (posts) in a specific forum thread.
+
+Example response:
+```json
+{
+  "id": "456",
+  "subject": "First game impressions",
+  "numArticles": 3,
+  "link": "https://boardgamegeek.com/thread/456/first-game-impressions",
+  "articles": [
+    {
+      "id": "789",
+      "username": "user123",
+      "link": "https://boardgamegeek.com/article/789",
+      "postDate": "2024-03-19T10:00:00Z",
+      "editDate": "2024-03-19T11:00:00Z",
+      "numEdits": 1,
+      "subject": "First game impressions",
+      "body": "Just played my first game and it was amazing!"
     }
   ]
 }
