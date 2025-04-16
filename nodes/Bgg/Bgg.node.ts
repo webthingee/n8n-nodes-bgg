@@ -205,7 +205,7 @@ export class Bgg implements INodeType {
 		name: 'bgg',
 		icon: 'file:icon.svg',
 		group: ['input'],
-		version: [1, 3, 0],
+		version: 2,
 		subtitle: '={{$parameter["operation"]}}',
 		description: 'Interact with BoardGameGeek API (Built: ' + new Date().toISOString() + ')',
 		defaults: {
