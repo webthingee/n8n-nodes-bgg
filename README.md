@@ -2,15 +2,11 @@
 
 This is an n8n community node for interacting with the BoardGameGeek (BGG) API. It allows you to search for board games and retrieve detailed information about specific games.
 
-## Documentation
-
-For detailed information about the BGG XML API2, see [BGG API Documentation](docs/BGG_API.md).
-
 ## Features
 
 - Search for board games by name
 - Get detailed information about a specific game using its ID
-- Get rules forum threads for a specific game
+- Get forum threads for a specific game (Rules, Reviews, General, Strategy, Variants, News, Crowdfunding, Sessions)
 - Get detailed information about a specific forum thread
 - No authentication required - uses BGG's public API
 
@@ -46,11 +42,12 @@ After installing the node, restart your n8n container for the node to appear in 
    - Images
    - And more!
 
-### Get Rules Forum Threads
+### Get Forum Threads
 1. Add a "BoardGameGeek" node to your workflow
-2. Select "Get Rules Forum Threads" as the operation
+2. Select "Get Forum Threads" as the operation
 3. Enter the game ID
-4. Optionally set:
+4. Select the forum type (Rules, Reviews, General, etc.)
+5. Optionally set:
    - Page number and number of threads per page
    - Sort By: How to sort the threads
      - Most Recent (default): Sort by most recent activity
@@ -60,7 +57,7 @@ After installing the node, restart your n8n container for the node to appear in 
    - Sort Order:
      - Descending (default): Newest/highest first
      - Ascending: Oldest/lowest first
-5. The node will return:
+6. The node will return:
    - Forum information:
      - Forum ID
      - Title
@@ -79,7 +76,7 @@ After installing the node, restart your n8n container for the node to appear in 
 ### Get Thread
 1. Add a "BoardGameGeek" node to your workflow
 2. Select "Get Thread" as the operation
-3. Enter the thread ID (you can get this from the Get Rules Forum Threads operation)
+3. Enter the thread ID (you can get this from the Get Forum Threads operation)
 4. The node will return detailed thread information including:
    - Thread ID
    - Subject
@@ -95,7 +92,7 @@ After installing the node, restart your n8n container for the node to appear in 
      - Subject
      - Body content
 
-## Example Response
+## Example Responses
 
 ### Search Games
 ```json
@@ -125,7 +122,7 @@ After installing the node, restart your n8n container for the node to appear in 
 }
 ```
 
-### Get Rules Forum Threads
+### Get Forum Threads
 ```json
 {
   "forum": {
@@ -171,121 +168,12 @@ After installing the node, restart your n8n container for the node to appear in 
 }
 ```
 
+## Documentation
+
+For detailed information about the BGG XML API2, see [BGG API Documentation](docs/BGG_API.md).
+
+For development notes and history, see [Development Notes](docs/DEVELOPMENT_NOTES.md).
+
 ## License
 
-[MIT](LICENSE.md)
-
-## Development Notes
-
-### Forum Thread Functionality Enhancement (2024-03-21)
-
-#### Process & Learnings
-
-1. **Initial Approach**
-   - Started with a simple direct forum ID construction (`{gameId}_{forumType}`)
-   - Realized this was unreliable as forum IDs might not follow this pattern
-   - Decided to use the two-step process: first get forum list, then find specific forum
-
-2. **Careful Changes**
-   - Kept existing sorting functionality intact
-   - Maintained the detailed response structure
-   - Preserved type safety and error handling
-   - Only modified what was necessary for the new functionality
-
-3. **What Worked Well**
-   - Two-step forum lookup process:
-     1. Get forum list for the game
-     2. Find specific forum by type
-   - Type-safe interfaces for responses
-   - Comprehensive sorting options
-   - Detailed error messages
-   - Clean response structure with proper date formatting
-
-4. **Key Components**
-   - Interfaces:
-     - `BggForum`: Forum metadata
-     - `BggForumList`: Forum list response
-     - `ForumThread`: Thread information
-     - `ForumResponse`: Complete response structure
-   - Forum Types:
-     - Rules
-     - Reviews
-     - General
-     - Strategy
-     - Variants
-     - News
-     - Crowdfunding
-     - Sessions
-   - Sorting Options:
-     - Most Recent (by last post date)
-     - Newest (by thread creation date)
-     - Most Active (by number of articles)
-     - Alphabetical (by subject)
-
-5. **Important Considerations**
-   - Always check for array safety (`Array.isArray()`)
-   - Parse numeric values properly (`parseInt()`)
-   - Format dates consistently (`toISOString()`)
-   - Handle missing or invalid data gracefully
-   - Maintain type safety throughout
-
-#### Future Improvements
-
-1. **Potential Additions**
-   - More forum types (e.g., Strategy, Variants)
-   - Additional sorting options
-   - Thread content preview
-   - User information in responses
-
-2. **Technical Improvements**
-   - Caching forum list responses
-   - Batch processing for multiple forums
-   - Rate limiting handling
-   - More detailed error messages
-
-3. **Documentation**
-   - API endpoint documentation
-   - Response format examples
-   - Common use cases
-   - Error handling guide
-
-#### Lessons Learned
-
-1. **API Usage**
-   - BGG's XML API requires careful parsing
-   - Some endpoints return different structures
-   - Error handling is crucial
-   - Rate limiting should be considered
-
-2. **Code Organization**
-   - Keep interfaces separate and well-defined
-   - Maintain consistent response structures
-   - Use type safety throughout
-   - Document complex logic
-
-3. **Testing**
-   - Test with various game IDs
-   - Verify all forum types work
-   - Check sorting functionality
-   - Validate error handling
-
-#### Next Steps
-
-1. **Immediate**
-   - Test with more game IDs
-   - Verify all forum types
-   - Check error scenarios
-   - Document API responses
-
-2. **Future**
-   - Add more forum types
-   - Implement caching
-   - Add thread content preview
-   - Improve error handling
-
-Remember: When making changes, always:
-1. Keep existing functionality intact
-2. Add new features incrementally
-3. Maintain type safety
-4. Test thoroughly
-5. Document changes 
+[MIT](LICENSE.md) 
