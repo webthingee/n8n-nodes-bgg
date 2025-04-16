@@ -495,17 +495,24 @@ export class Bgg implements INodeType {
 						threadCount: parseInt(forumResult.forum.numthreads, 10),
 						postCount: parseInt(forumResult.forum.numposts, 10),
 						lastPostDate: new Date(forumResult.forum.lastpostdate).toISOString(),
-						threads: Array.isArray(forumResult.forum.threads.thread) 
-							? forumResult.forum.threads.thread.map((thread: any) => ({
-								id: thread.id,
-								subject: thread.subject,
-								author: thread.author,
-								numArticles: parseInt(thread.numarticles, 10),
-								postDate: new Date(thread.postdate).toISOString(),
-								lastPostDate: new Date(thread.lastpostdate).toISOString()
-							}))
-							: []
+						threads: []
 					};
+
+					// Handle both single thread and multiple thread cases
+					if (forumResult.forum.threads?.thread) {
+						const threads = Array.isArray(forumResult.forum.threads.thread) 
+							? forumResult.forum.threads.thread 
+							: [forumResult.forum.threads.thread];
+						
+						cleanResult.threads = threads.map((thread: any) => ({
+							id: thread.id,
+							subject: thread.subject,
+							author: thread.author,
+							numArticles: parseInt(thread.numarticles, 10),
+							postDate: new Date(thread.postdate).toISOString(),
+							lastPostDate: new Date(thread.lastpostdate).toISOString()
+						}));
+					}
 
 					// Sort threads based on user preferences
 					const sortBy = this.getNodeParameter('sortBy', i) as string;
