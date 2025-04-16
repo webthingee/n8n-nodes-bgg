@@ -211,6 +211,11 @@ After installing the node, restart your n8n container for the node to appear in 
      - Rules
      - Reviews
      - General
+     - Strategy
+     - Variants
+     - News
+     - Crowdfunding
+     - Sessions
    - Sorting Options:
      - Most Recent (by last post date)
      - Newest (by thread creation date)

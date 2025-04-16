@@ -208,12 +208,17 @@ export class Bgg implements INodeType {
 				name: 'forumType',
 				type: 'options',
 				required: true,
-				default: 'rules',
+				default: 'general',
 				options: [
 					{
-						name: 'Rules',
-						value: 'rules',
-						description: 'Get threads from the Rules forum',
+						name: 'General',
+						value: 'general',
+						description: 'Get threads from the General forum',
+					},
+					{
+						name: 'News',
+						value: 'news',
+						description: 'Get threads from the News forum',
 					},
 					{
 						name: 'Reviews',
@@ -221,9 +226,29 @@ export class Bgg implements INodeType {
 						description: 'Get threads from the Reviews forum',
 					},
 					{
-						name: 'General',
-						value: 'general',
-						description: 'Get threads from the General forum',
+						name: 'Rules',
+						value: 'rules',
+						description: 'Get threads from the Rules forum',
+					},
+					{
+						name: 'Sessions',
+						value: 'sessions',
+						description: 'Get threads from the Sessions forum',
+					},
+					{
+						name: 'Strategy',
+						value: 'strategy',
+						description: 'Get threads from the Strategy forum',
+					},
+					{
+						name: 'Variants',
+						value: 'variants',
+						description: 'Get threads from the Variants forum',
+					},
+					{
+						name: 'Crowdfunding',
+						value: 'crowdfunding',
+						description: 'Get threads from the Crowdfunding forum',
 					},
 				],
 				displayOptions: {
