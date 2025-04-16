@@ -53,6 +53,39 @@ interface BggGame {
 			value: string;
 		};
 	}>;
+	link?: Array<{
+		$: {
+			type: string;
+			value: string;
+			id: string;
+		};
+	}>;
+	statistics?: Array<{
+		ratings: Array<{
+			average: Array<{
+				$: {
+					value: string;
+				};
+			}>;
+			bayesaverage: Array<{
+				$: {
+					value: string;
+				};
+			}>;
+			ranks: Array<{
+				rank: Array<{
+					$: {
+						type: string;
+						id: string;
+						name: string;
+						friendlyname: string;
+						value: string;
+						bayesaverage: string;
+					};
+				}>;
+			}>;
+		}>;
+	}>;
 }
 
 interface BggSearchResult {
@@ -142,6 +175,34 @@ interface ForumResponse extends IDataObject {
 	rawResponse?: string;
 }
 
+interface BggHotnessItem {
+	$: {
+		id: string;
+		rank: string;
+	};
+	thumbnail: Array<{
+		$: {
+			value: string;
+		};
+	}>;
+	name: Array<{
+		$: {
+			value: string;
+		};
+	}>;
+	yearpublished: Array<{
+		$: {
+			value: string;
+		};
+	}>;
+}
+
+interface BggHotness {
+	items: {
+		item: BggHotnessItem[];
+	};
+}
+
 export class Bgg implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'BoardGameGeek',
@@ -186,6 +247,12 @@ export class Bgg implements INodeType {
 						value: 'searchGames',
 						description: 'Search for games by name',
 						action: 'Search for games by name',
+					},
+					{
+						name: 'Get Hotness',
+						value: 'getHotness',
+						description: 'Get the current hot games on BGG',
+						action: 'Get the current hot games on BGG',
 					},
 				],
 				default: 'getGame',
@@ -386,7 +453,7 @@ export class Bgg implements INodeType {
 						throw new NodeOperationError(this.getNode(), 'Game ID is required');
 					}
 
-					const response = await axios.get(`https://boardgamegeek.com/xmlapi2/thing?id=${gameId}`);
+					const response = await axios.get(`https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1`);
 					const result = await parseStringPromise(response.data) as { items: { item: BggGame[] } };
 					
 					if (!result.items || !result.items.item || result.items.item.length === 0) {
@@ -394,6 +461,32 @@ export class Bgg implements INodeType {
 					}
 
 					const game = result.items.item[0];
+					
+					// Get designers
+					const designers = game.link?.filter(link => link.$.type === 'boardgamedesigner')
+						.map(link => link.$.value) || [];
+
+					// Get artists
+					const artists = game.link?.filter(link => link.$.type === 'boardgameartist')
+						.map(link => link.$.value) || [];
+
+					// Get mechanics
+					const mechanics = game.link?.filter(link => link.$.type === 'boardgamemechanic')
+						.map(link => link.$.value) || [];
+
+					// Get expansions
+					const expansions = game.link?.filter(link => link.$.type === 'boardgameexpansion')
+						.map(link => ({
+							id: link.$.id,
+							name: link.$.value
+						})) || [];
+
+					// Get ratings and rank
+					const stats = game.statistics?.[0]?.ratings?.[0];
+					const averageRating = stats?.average?.[0]?.$.value;
+					const bggRating = stats?.bayesaverage?.[0]?.$.value;
+					const rank = stats?.ranks?.[0]?.rank?.find(r => r.$.type === 'subtype' && r.$.name === 'boardgame')?.$.value;
+
 					returnData.push({
 						json: {
 							id: game.$.id,
@@ -408,6 +501,14 @@ export class Bgg implements INodeType {
 							minPlayTime: game.minplaytime?.[0]?.$.value || '',
 							maxPlayTime: game.maxplaytime?.[0]?.$.value || '',
 							yearPublished: game.yearpublished[0].$.value || '',
+							isExpansion: game.$.type === 'boardgameexpansion',
+							bggRating: bggRating ? parseFloat(bggRating) : null,
+							averageRating: averageRating ? parseFloat(averageRating) : null,
+							rank: rank ? parseInt(rank, 10) : null,
+							designers: designers,
+							artists: artists,
+							mechanics: mechanics,
+							expansions: expansions,
 						},
 					});
 				} else if (operation === 'searchGames') {
@@ -578,6 +679,32 @@ export class Bgg implements INodeType {
 								subject: article.subject || '',
 								body: article.body || ''
 							}))
+						},
+					});
+				} else if (operation === 'getHotness') {
+					const response = await axios.get('https://boardgamegeek.com/xmlapi2/hot?type=boardgame');
+					const result = await parseStringPromise(response.data) as BggHotness;
+
+					if (!result.items || !result.items.item) {
+						returnData.push({
+							json: {
+								items: [],
+							},
+						});
+						continue;
+					}
+
+					const hotItems = result.items.item.map((item) => ({
+						id: item.$.id,
+						rank: parseInt(item.$.rank, 10),
+						name: item.name[0].$.value || '',
+						yearPublished: item.yearpublished?.[0]?.$.value || '',
+						thumbnail: item.thumbnail?.[0]?.$.value || '',
+					}));
+
+					returnData.push({
+						json: {
+							items: hotItems,
 						},
 					});
 				}
