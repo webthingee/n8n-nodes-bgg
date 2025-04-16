@@ -6,7 +6,6 @@ import {
 	NodeOperationError,
 	IDataObject,
 } from 'n8n-workflow';
-import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 
 interface BggGame {
@@ -443,18 +442,25 @@ export class Bgg implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const operation = this.getNodeParameter('operation', 0) as string;
+		const length = items.length;
+		let responseData;
 
-		for (let i = 0; i < items.length; i++) {
+		for (let i = 0; i < length; i++) {
 			try {
+				const operation = this.getNodeParameter('operation', i) as string;
+
 				if (operation === 'getGame') {
 					const gameId = this.getNodeParameter('gameId', i) as string;
-					if (!gameId) {
-						throw new NodeOperationError(this.getNode(), 'Game ID is required');
-					}
+					
+					responseData = await this.helpers.request({
+						method: 'GET',
+						url: `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1`,
+						headers: {
+							'Accept': 'application/xml',
+						},
+					});
 
-					const response = await axios.get(`https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1`);
-					const result = await parseStringPromise(response.data) as { items: { item: BggGame[] } };
+					const result = await parseStringPromise(responseData) as { items: { item: BggGame[] } };
 					
 					if (!result.items || !result.items.item || result.items.item.length === 0) {
 						throw new NodeOperationError(this.getNode(), 'Game not found');
@@ -513,12 +519,16 @@ export class Bgg implements INodeType {
 					});
 				} else if (operation === 'searchGames') {
 					const searchQuery = this.getNodeParameter('searchQuery', i) as string;
-					if (!searchQuery) {
-						throw new NodeOperationError(this.getNode(), 'Search query is required');
-					}
+					
+					responseData = await this.helpers.request({
+						method: 'GET',
+						url: `https://boardgamegeek.com/xmlapi2/search?query=${encodeURIComponent(searchQuery)}&type=boardgame`,
+						headers: {
+							'Accept': 'application/xml',
+						},
+					});
 
-					const response = await axios.get(`https://boardgamegeek.com/xmlapi2/search?query=${encodeURIComponent(searchQuery)}&type=boardgame`);
-					const result = await parseStringPromise(response.data) as BggSearchResult;
+					const result = await parseStringPromise(responseData) as BggSearchResult;
 
 					if (!result.items || !result.items.item) {
 						returnData.push({
@@ -647,10 +657,16 @@ export class Bgg implements INodeType {
 						throw new NodeOperationError(this.getNode(), 'Thread ID is required');
 					}
 
-					const response = await axios.get(`https://boardgamegeek.com/xmlapi2/thread?id=${threadId}`);
-					console.log('Raw Thread XML Response:', response.data);
+					responseData = await this.helpers.request({
+						method: 'GET',
+						url: `https://boardgamegeek.com/xmlapi2/thread?id=${threadId}`,
+						headers: {
+							'Accept': 'application/xml',
+						},
+					});
+					console.log('Raw Thread XML Response:', responseData);
 					
-					const result = await parseStringPromise(response.data, {
+					const result = await parseStringPromise(responseData, {
 						mergeAttrs: true,
 						explicitArray: false
 					});
@@ -682,8 +698,15 @@ export class Bgg implements INodeType {
 						},
 					});
 				} else if (operation === 'getHotness') {
-					const response = await axios.get('https://boardgamegeek.com/xmlapi2/hot?type=boardgame');
-					const result = await parseStringPromise(response.data) as BggHotness;
+					responseData = await this.helpers.request({
+						method: 'GET',
+						url: 'https://boardgamegeek.com/xmlapi2/hot?type=boardgame',
+						headers: {
+							'Accept': 'application/xml',
+						},
+					});
+
+					const result = await parseStringPromise(responseData) as BggHotness;
 
 					if (!result.items || !result.items.item) {
 						returnData.push({
