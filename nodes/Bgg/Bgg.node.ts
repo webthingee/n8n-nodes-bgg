@@ -556,7 +556,7 @@ export class Bgg implements INodeType {
 					const forumType = this.getNodeParameter('forumType', i) as string;
 
 					if (!gameId) {
-						throw new Error('Game ID is required');
+						throw new NodeOperationError(this.getNode(), 'Game ID is required');
 					}
 
 					// First get the forum list to find the correct forum ID
@@ -578,7 +578,7 @@ export class Bgg implements INodeType {
 					});
 
 					if (!targetForum) {
-						throw new Error(`${forumType} forum not found for game ${gameId}`);
+						throw new NodeOperationError(this.getNode(), `${forumType} forum not found for game ${gameId}`);
 					}
 
 					// Then get the forum threads

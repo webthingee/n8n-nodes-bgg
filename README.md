@@ -1,6 +1,17 @@
 # n8n-nodes-bgg
 
-A custom n8n node for interacting with the BoardGameGeek (BGG) XML API2.
+This is an n8n community node. It lets you use BoardGameGeek in your n8n workflows.
+
+[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
+
+[Installation](#installation)  
+[Operations](#operations)  
+[Credentials](#credentials)  
+[Compatibility](#compatibility)  
+[Usage](#usage)  
+[Resources](#resources)  
+[Troubleshooting](#troubleshooting)  
+[Version History](#version-history)  
 
 ## Features
 
@@ -12,121 +23,66 @@ A custom n8n node for interacting with the BoardGameGeek (BGG) XML API2.
 
 ## Installation
 
-1. Install the package in your n8n custom nodes directory:
+Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
+
 ```bash
 npm install n8n-nodes-bgg
 ```
 
 2. Restart your n8n instance
 
+## Operations
+
+- Get Game: Get detailed game information using ID
+- Get Forum Threads: Get threads from a specific forum type
+- Get Articles in Thread: Get articles in a specific forum thread
+- Search Games: Search for games by name
+- Get Hotness: Get the current hot games on BGG
+
+## Credentials
+
+This node does not require credentials as it uses the public BGG XML API.
+
+## Compatibility
+
+Tested with n8n version 1.0.0 and later.
+
 ## Usage
 
-### Get Game
-Retrieves detailed information about a specific game using its BGG ID.
+1. Install the node
+2. Add it to your workflow
+3. Configure the operation and parameters
+4. Run the workflow
 
-Example response:
-```json
-{
-  "id": "13",
-  "name": "Catan",
-  "description": "The game of Catan...",
-  "yearPublished": "1995",
-  "minPlayers": "3",
-  "maxPlayers": "4",
-  "playingTime": "90",
-  "minAge": "10",
-  "image": "https://cf.geekdo-images.com/...",
-  "thumbnail": "https://cf.geekdo-images.com/...",
-  "mechanics": [
-    "Dice Rolling",
-    "Hand Management",
-    "Trading"
-  ]
-}
-```
+## Resources
 
-### Search Games
-Searches for games by name.
+* [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
+* [BGG XML API documentation](https://boardgamegeek.com/wiki/page/BGG_XML_API2)
 
-Example response:
-```json
-{
-  "items": [
-    {
-      "id": "13",
-      "name": "Catan",
-      "yearPublished": "1995"
-    }
-  ]
-}
-```
+## Troubleshooting
 
-### Get Forum Threads
-Retrieves threads from a specific forum type for a game.
+If you encounter any issues while installing or using this node, please refer to our [Troubleshooting Guide](TROUBLESHOOTING.md).
 
-Example response:
-```json
-{
-  "forumId": "123",
-  "forumTitle": "General",
-  "threadCount": 50,
-  "postCount": 200,
-  "lastPostDate": "2024-03-20T12:00:00Z",
-  "threads": [
-    {
-      "id": "456",
-      "subject": "First game impressions",
-      "author": "user123",
-      "numArticles": 10,
-      "postDate": "2024-03-19T10:00:00Z",
-      "lastPostDate": "2024-03-20T12:00:00Z"
-    }
-  ]
-}
-```
+Common issues and their solutions are documented there, including:
+- Installation errors
+- Version number conflicts
+- Database-related issues
+- Node registration problems
 
-### Get Articles in Thread
-Retrieves all articles (posts) in a specific forum thread.
+## Version History
 
-Example response:
-```json
-{
-  "id": "456",
-  "subject": "First game impressions",
-  "numArticles": 3,
-  "link": "https://boardgamegeek.com/thread/456/first-game-impressions",
-  "articles": [
-    {
-      "id": "789",
-      "username": "user123",
-      "link": "https://boardgamegeek.com/article/789",
-      "postDate": "2024-03-19T10:00:00Z",
-      "editDate": "2024-03-19T11:00:00Z",
-      "numEdits": 1,
-      "subject": "First game impressions",
-      "body": "Just played my first game and it was amazing!"
-    }
-  ]
-}
-```
+### 1.3.0
+- Fixed version number format
+- Updated error handling
+- Added proper dependency structure
+- Resolved duplicate node registration issue
 
-### Get Hotness
-Retrieves the current hot games on BGG.
-
-Example response:
-```json
-{
-  "items": [
-    {
-      "id": "13",
-      "rank": 1,
-      "name": "Catan",
-      "yearPublished": "1995",
-      "thumbnail": "https://cf.geekdo-images.com/..."
-    }
-  ]
-}
-```
+### 1.0.0
+- Initial release
+- Basic BGG API integration
+- Game information retrieval
+- Forum thread access
+- Search functionality
 
 ## Development Notes
 
