@@ -1,0 +1,174 @@
+N8N Node Development Guidelines
+============================
+
+Version Formatting
+----------------
+1. Node Version Format:
+   - Use decimal format (e.g., "1.3") NOT array format ([1, 3, 0])
+   - Must be included in the node class definition
+   - Example: version: 1.3
+   - Must match the API version you're implementing
+
+2. Package Version Format:
+   - Use semantic versioning (e.g., "1.1.0")
+   - Must match in package.json
+   - Keep consistent with npm versioning standards
+   - Follow MAJOR.MINOR.PATCH format
+
+3. Description Format:
+   - Include version number in description
+   - Include build timestamp
+   - Example: 'Interact with BoardGameGeek API v1.3 (Built: ' + new Date().toISOString() + ')'
+
+Interface Requirements
+-------------------
+1. Data Objects:
+   - All interfaces that represent data must extend IDataObject
+   - Example: interface BggGame extends IDataObject { ... }
+   - Ensure all properties are properly typed
+
+2. Node Structure:
+   - Implement INodeType for the main node class
+   - Follow n8n's type system for parameters and returns
+   - Include proper error handling with NodeOperationError
+
+Package Configuration
+------------------
+1. package.json Requirements:
+   - "n8n": { "nodes": ["dist/nodes/*/**.js"] }
+   - Correct main entry point (usually "dist/index.js")
+   - Include all necessary n8n peer dependencies
+   - Include type definitions
+   - Specify n8nNodesApiVersion
+
+2. Dependencies:
+   - List n8n-workflow and n8n-core as peer dependencies
+   - Include all external API dependencies
+   - Specify compatible versions
+   - Use exact versions for n8n dependencies
+
+Build Process
+------------
+1. TypeScript Configuration:
+   - Ensure tsconfig.json is properly configured
+   - Include necessary type definitions
+   - Set correct output directory (usually "dist")
+   - Enable source maps for debugging
+
+2. Build Steps:
+   - Compile TypeScript
+   - Build icons if needed
+   - Run linting
+   - Example: "npm run build && gulp build:icons"
+   - Include prepublishOnly script
+
+Testing Requirements
+-----------------
+1. Local Testing:
+   - Test in Docker environment before publishing
+   - Verify node appears in n8n UI
+   - Test all operations and parameters
+   - Test error handling
+
+2. Version Testing:
+   - Test with specified n8n version
+   - Verify compatibility with different n8n versions
+   - Test in both local and production environments
+
+Publishing Guidelines
+------------------
+1. Before Publishing:
+   - Run full build process
+   - Test in local n8n instance
+   - Verify all interfaces extend IDataObject
+   - Check version numbers are consistent
+   - Run all tests
+
+2. npm Publishing:
+   - Use "npm publish" (not --force)
+   - Wait 24 hours after unpublishing before republishing
+   - Keep version history consistent
+   - Never publish with --force flag
+
+Common Pitfalls to Avoid
+----------------------
+1. Version Mismatches:
+   - Don't mix version formats (decimal vs array)
+   - Keep package.json version aligned with node version
+   - Don't remove version from description
+   - Don't change version format after publishing
+
+2. Interface Issues:
+   - Don't forget to extend IDataObject
+   - Don't use incompatible types with n8n
+   - Don't skip type definitions
+   - Don't use any type unnecessarily
+
+3. Build Issues:
+   - Don't ignore TypeScript errors
+   - Don't skip testing in Docker environment
+   - Don't publish without local testing
+   - Don't skip linting
+
+4. Publishing Issues:
+   - Don't force publish without proper testing
+   - Don't ignore npm's 24-hour unpublish rule
+   - Don't publish without checking all version numbers
+   - Don't publish without testing in n8n UI
+
+Directory Structure
+-----------------
+```
+n8n-nodes-example/
+├── nodes/
+│   └── Example/
+│       ├── Example.node.ts
+│       ├── __tests__/
+│       │   └── Example.test.ts
+│       └── icon.svg
+├── credentials/
+│   └── ExampleApi.credentials.ts
+├── package.json
+├── tsconfig.json
+├── .eslintrc.js
+├── jest.config.js
+└── README.md
+```
+
+Best Practices
+------------
+1. Documentation:
+   - Clear README with setup instructions
+   - Document all parameters and operations
+   - Include example usage
+   - Document version compatibility
+
+2. Error Handling:
+   - Proper error messages for API failures
+   - Validation for required parameters
+   - Clear user feedback in n8n UI
+   - Use NodeOperationError for user-facing errors
+
+3. Maintenance:
+   - Keep dependencies updated
+   - Monitor for n8n version changes
+   - Regular testing with latest n8n versions
+   - Keep version numbers in sync
+
+4. Security:
+   - Proper credential handling
+   - API key management
+   - Rate limiting consideration
+   - Input validation
+
+5. Testing:
+   - Write unit tests for all operations
+   - Test error cases
+   - Test in Docker environment
+   - Test in n8n UI
+
+6. Development Workflow:
+   - Use TypeScript strict mode
+   - Follow n8n's coding standards
+   - Use proper type definitions
+   - Keep build process clean 
